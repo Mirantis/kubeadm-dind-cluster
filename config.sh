@@ -39,6 +39,12 @@ DIND_IMAGE="${DIND_IMAGE:-mirantis/kubeadm-dind-cluster:v1.8}"
 # DIND containers together.
 CNI_PLUGIN="${CNI_PLUGIN:-bridge}"
 
+# Name Prefix for all docker resources related to the cluster we're operating on
+# This allows you to run multiple clusters on the same docker daemon
+#   ie: "CLUSTER_PREFIX=test" --> test-kube-master, test-kube-node-1, test-kubeadm-dind-net
+# Use together with APISERVER_PORT and DIND_SUBNET to prevent network conflicts
+# CLUSTER_PREFIX="${CLUSTER_PREFIX:-test}"
+
 # When using Calico with Kubernetes as the datastore (calico-kdd) your
 # controller manager needs to be started with `--cluster-cidr=192.168.0.0/16`.
 # More information here: http://docs.projectcalico.org/v2.3/getting-started/kubernetes/installation/hosted/kubernetes-datastore/
