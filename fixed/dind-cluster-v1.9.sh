@@ -589,8 +589,25 @@ function dind::run {
   fi
 
   volume_name="kubeadm-dind-${container_name}"
+  # This mount is needed because some apps does not expect
+  # /var/lib/kubelet/pods/{podid}/volumes/kubernetes.io~empty-dir
+  # to be on overlayfs.
+  #
+  # For volumes, Docker always uses non-configurable rprivate propagation,
+  # which is not supported for kubernetes volumes.
+  #
+  # So we use bind-mount instead with rshared propagation.
+  #
+  # Note that on travis, /tmp is not mounted with shared propagation.
+  # So we use "/var/lib/kubeadm-dind-kubeletpods" instead.
+  varlibkubeletpods_tmp="/var/lib/kubeadm-dind-kubeletpods"
+  varlibkubeletpods_bind_path="${varlibkubeletpods_tmp}/${container_name}"
   dind::ensure-network
   dind::ensure-volume ${reuse_volume} "${volume_name}"
+  if [[ ! {reuse_volume} ]]; then
+    rm -rf ${varlibkubeletpods_bind_path}
+  fi
+  mkdir -p ${varlibkubeletpods_bind_path}
   dind::ensure-nat
   dind::ensure-dns
 
@@ -608,6 +625,7 @@ function dind::run {
          --hostname "${container_name}" \
          -l mirantis.kubeadm_dind_cluster \
          -v ${volume_name}:/dind \
+         -v ${varlibkubeletpods_bind_path}:/var/lib/kubelet/pods:rshared \
          ${opts[@]+"${opts[@]}"} \
          "${DIND_IMAGE}" \
          ${args[@]+"${args[@]}"}
