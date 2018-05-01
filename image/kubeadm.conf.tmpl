@@ -12,7 +12,9 @@ networking:
   {{POD_SUBNET_DISABLE}}podSubnet: "{{POD_NETWORK_CIDR}}"
   serviceSubnet: "{{SVC_SUBNET}}"
 tokenTTL: 0s
-nodeName: kube-master
+nodeName: {{CLUSTER_PREFIX}}kube-master
 apiServerExtraArgs:
   insecure-bind-address: "{{BIND_ADDR}}"
   insecure-port: "8080"
+etcd:
+  image: k8s.gcr.io/etcd-amd64:3.2.17
