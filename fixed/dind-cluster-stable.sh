@@ -395,9 +395,9 @@ function dind::ensure-downloaded-kubectl {
       kubectl_sha1_darwin=b9f6122fe29dd29fff01194cc00a40a5451581fd
       ;;
     v1.10)
-      full_kubectl_version=v1.10.1
-      kubectl_sha1_linux=a5c8e589bed21ec471e8c582885a8c9972a84da1
-      kubectl_sha1_darwin=e869ab8298bd92056b23568343ebd4a6c84f9817
+      full_kubectl_version=v1.10.3
+      kubectl_sha1_linux=94f996d645e74634a4be67bbb5417f892774230b
+      kubectl_sha1_darwin=226442dd0011c1eb9a50b7996652680f6a45fe36
       ;;
     "")
       return 0
@@ -774,21 +774,25 @@ function dind::init {
     docker exec --privileged -i kube-master touch /v6-mode
   fi
 
-  docker exec --privileged -i kube-master bash <<EOF
+  feature_gates="{}"
+  if [[ ${DNS_SERVICE} == "coredns" ]]; then
+    # can't just use 'CoreDNS: false' because
+    # it'll break k8s 1.8. FIXME: simplify
+    # after 1.8 support is removed
+    feature_gates="{CoreDNS: true}"
+  elif docker exec kube-master kubeadm init --help 2>&1 | grep -q CoreDNS; then
+    # FIXME: CoreDNS should be the default in 1.11
+    feature_gates="{CoreDNS: false}"
+  fi
+  docker exec -i kube-master bash <<EOF
 sed -e "s|{{ADV_ADDR}}|${kube_master_ip}|" \
     -e "s|{{POD_SUBNET_DISABLE}}|${pod_subnet_disable}|" \
     -e "s|{{POD_NETWORK_CIDR}}|${POD_NETWORK_CIDR}|" \
     -e "s|{{SVC_SUBNET}}|${SERVICE_CIDR}|" \
     -e "s|{{BIND_ADDR}}|${bind_address}|" \
+    -e "s|{{FEATURE_GATES}}|${feature_gates}|" \
     /etc/kubeadm.conf.tmpl > /etc/kubeadm.conf
 EOF
-  if [[ ${DNS_SERVICE} == "coredns" ]]; then
-    docker exec -i kube-master /bin/sh -c "cat >>/etc/kubeadm.conf" <<EOF
-featureGates:
-  CoreDNS: true 
-
-EOF
-  fi
   # TODO: --skip-preflight-checks needs to be replaced with
   # --ignore-preflight-errors=all for k8s 1.10+
   # (need to check k8s 1.9)
@@ -892,14 +896,14 @@ function dind::create-static-routes-for-bridge {
       if [[ ${IP_MODE} = "ipv4" ]]; then
 	# Assuming pod subnets will all be /24
         dest="${POD_NET_PREFIX}${id}.0/24"
-        gw=`docker exec ${dest_node} ifconfig eth0 | grep "inet addr" | cut -f 2 -d: | cut -f 1 -d' '`
+        gw=`docker exec ${dest_node} ip addr show eth0 | grep -w inet | awk '{ print $2 }' | sed 's,/.*,,'`
       else
 	instance=$(printf "%02x" ${id})
 	if [[ $((${POD_NET_SIZE} % 16)) -ne 0 ]]; then
 	  instance+="00" # Move node ID to upper byte
 	fi
 	dest="${POD_NET_PREFIX}${instance}::/${POD_NET_SIZE}"
-        gw=`docker exec ${dest_node} ifconfig eth0 | grep "inet6" | grep -i global | awk '{ print $3 }' | cut -f 1 -d/`
+        gw=`docker exec ${dest_node} ip addr show eth0 | grep -w inet6 | grep -i global | head -1 | awk '{ print $2 }' | sed 's,/.*,,'`
       fi
       docker exec ${node} ip route add ${dest} via ${gw}
     done
@@ -1052,7 +1056,7 @@ function dind::fix-mounts {
     if [[ ${BUILD_KUBEADM} || ${BUILD_HYPERKUBE} ]]; then
       docker exec "${node_name}" mount --make-shared /k8s
     fi
-    docker exec "${node_name}" mount --make-shared /sys/kernel/debug
+    # docker exec "${node_name}" mount --make-shared /sys/kernel/debug
   done
 }
 
@@ -1375,7 +1379,7 @@ function dind::custom-docker-opts {
 
 case "${1:-}" in
   up)
-    if [[ ! ( ${DIND_IMAGE} =~ local ) ]]; then
+    if [[ ! ( ${DIND_IMAGE} =~ local ) && ! ${DIND_SKIP_PULL:-} ]]; then
       dind::step "Making sure DIND image is up to date"
       docker pull "${DIND_IMAGE}" >&2
     fi

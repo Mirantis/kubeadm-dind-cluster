@@ -277,8 +277,19 @@ function dind::frob-proxy {
 }
 
 function dind::frob-apiserver {
+  local cur_pid=$(pidof kube-apiserver)
   local -a filters=("${mount_binaries}" "${apiserver_insecure_bind_address}" "${apiserver_insecure_bind_port}" "${apiserver_mount_propagation}")
   dind::frob-file "${apiserver_static_pod}" "${filters[@]}"
+  # Make sure apiserver really restarts before continuing, otherwise
+  # we may run into a situation where it restarts while kube-proxy is
+  # being patched.
+  local n=60
+  while [[ $(pidof kube-apiserver) = ${cur_pid} ]]; do
+    if ((--n == 0)); then
+      echo "Error: timed out waiting for apiserver to restart" >&2
+    fi
+    sleep 0.5
+  done
 }
 
 function dind::frob-scheduler {
@@ -297,10 +308,7 @@ function dind::wait-for-apiserver {
     local docker_ip="$(ip addr show docker0 | grep -w inet | awk '{ print $2; }' | sed 's@/.*@@')"
     local url="http://${docker_ip}:8080/api"
     local n=60
-    while true; do
-      if curl -s "${url}" >&/dev/null; then
-        break
-      fi
+    while ! curl -s "${url}" >&/dev/null; do
       if ((--n == 0)); then
         echo "Error: timed out waiting for apiserver to become available" >&2
       fi
@@ -360,11 +368,19 @@ function dind::prepare-for-kubeadm {
   systemctl enable kubelet
 }
 
+function dind::kubeadm-reset {
+  if kubeadm reset --help 2>/dev/null|grep -q -- --force; then
+    kubeadm reset --force || true
+  else
+    kubeadm reset || true
+  fi
+}
+
 function dind::do-kubeadm {
   if ! time KUBE_HYPERKUBE_IMAGE="${hypokube_final_image}" kubeadm "$@"; then
     echo "*** 'kubeadm $*' failed, doing kubeadm reset ***" >&2
     cp -av /etc/cni /etc/cni.bak
-    kubeadm reset || true
+    dind::kubeadm-reset
     rm -rf /etc/cni
     mv /etc/cni.bak /etc/cni
     systemctl restart kubelet
