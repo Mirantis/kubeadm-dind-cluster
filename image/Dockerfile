@@ -56,6 +56,7 @@ RUN clean-install apt-utils \
     e2fsprogs \
     ebtables \
     ethtool \
+    git \
     gnupg2 \
     ipcalc \
     iptables \
