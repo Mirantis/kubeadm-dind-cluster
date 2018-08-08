@@ -1729,6 +1729,7 @@ function dind::proxy {
     fi
     docker exec -i ${container_id} /bin/sh -c "cat > /etc/systemd/system/docker.service.d/30-proxy.conf" <<< "${proxy_env}"
     docker exec ${container_id} systemctl daemon-reload
+    docker exec ${container_id} rm /etc/docker/daemon.json
     docker exec ${container_id} systemctl restart docker
   fi
 }
