@@ -163,6 +163,7 @@ function dind::net-name {
 function dind::extract-ipv4-subnet() {
   # If only one subnet, there may be a leading space in list of subnets
   local trimmed="$( echo "$1" | sed -e 's/^[[:space:]]*//')"
+  local old_ifs=$IFS
   IFS=' ' subnets=( "${trimmed}" )
   for subnet in "${subnets[@]}"; do
     if [[ -z "${subnet}" || "${subnet}" =~ ":" ]]; then
@@ -171,6 +172,8 @@ function dind::extract-ipv4-subnet() {
     IFS='/' parts=( $subnet )
     DIND_SUBNET="${parts[0]}"
     DIND_SUBNET_SIZE="${parts[1]}"
+    # recover old IFS
+    IFS=$old_ifs
     return
   done
   echo "ERROR: Unable to extract subnet for $( dind::net-name ) - aborting..."
