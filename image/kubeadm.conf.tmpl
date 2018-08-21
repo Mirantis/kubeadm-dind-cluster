@@ -24,4 +24,13 @@ controllerManagerExtraArgs:
 schedulerExtraArgs:
   {{COMPONENT_FEATURE_GATES}}
 {{SCHEDULER_EXTRA_ARGS}}
+apiServerExtraVolumes:
+  - name: audit-mount
+    hostPath: /audit
+    mountPath: /audit
+    writable: true
+    pathType: DirectoryOrCreate
+auditPolicy:
+  logDir: /audit/logdir
+  path: /audit/policy.yaml
 featureGates: {{FEATURE_GATES}}

@@ -97,6 +97,7 @@ COPY rundocker /usr/local/bin
 COPY dindnet /usr/local/bin
 COPY snapshot /usr/local/bin
 COPY kubeadm.conf.tmpl /etc/kubeadm.conf.tmpl
+COPY audit-policy.yaml /audit/policy.yaml
 
 # Remove unwanted systemd services.
 # TODO: use 'systemctl mask' to disable units

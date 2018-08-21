@@ -311,7 +311,7 @@ DIND_DAEMON_JSON_FILE="${DIND_DAEMON_JSON_FILE:-/etc/docker/daemon.json}"  # can
 DIND_REGISTRY_MIRROR="${DIND_REGISTRY_MIRROR:-}"  # plain string format
 DIND_INSECURE_REGISTRIES="${DIND_INSECURE_REGISTRIES:-}"  # json list format
 
-FEATURE_GATES="${FEATURE_GATES:-MountPropagation=true}"
+FEATURE_GATES="${FEATURE_GATES:-MountPropagation=true,AdvancedAuditing=true}"
 # you can set special value 'none' not to set any kubelet's feature gates.
 KUBELET_FEATURE_GATES="${KUBELET_FEATURE_GATES:-MountPropagation=true,DynamicKubeletConfig=true}"
 
@@ -967,16 +967,18 @@ function dind::init {
     docker exec --privileged -i "$master_name" touch /v6-mode
   fi
 
-  feature_gates="{}"
+  feature_gates="{"
+  feature_gates+="Auditing: true,"
   if [[ ${DNS_SERVICE} == "coredns" ]]; then
     # can't just use 'CoreDNS: false' because
     # it'll break k8s 1.8. FIXME: simplify
     # after 1.8 support is removed
-    feature_gates="{CoreDNS: true}"
+    feature_gates+="CoreDNS: true"
   elif docker exec "$master_name" kubeadm init --help 2>&1 | grep -q CoreDNS; then
     # FIXME: CoreDNS should be the default in 1.11
-    feature_gates="{CoreDNS: false}"
+    feature_gates+="CoreDNS: false"
   fi
+  feature_gates+="}"
 
   component_feature_gates=""
   if [ "${FEATURE_GATES}" != "none" ]; then
