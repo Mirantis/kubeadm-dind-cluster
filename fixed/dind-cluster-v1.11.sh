@@ -1023,7 +1023,7 @@ function dind::run {
 
   if [[ ! ${using_linuxkit} ]]; then
     if [ "${DARWIN_MODE}" == "True" ] ; then
-      # /boot and /lib/modules do not exist with Docker for Mac,
+      # /boot and /lib/modules do not exist with Docker for Mac, but
       # /tmp is available for bind mounting.
       BOOTVOL=/tmp
       LIBMODULESVOL=/tmp
