@@ -17,8 +17,10 @@ set -o nounset
 set -o pipefail
 set -o errtrace
 
+DARWINMODE=False
 if [ $(uname) = Darwin ]; then
   readlinkf(){ perl -MCwd -e 'print Cwd::abs_path shift' "$1";}
+  DARWINMODE=True
 else
   readlinkf(){ readlink -f "$1"; }
 fi
@@ -1020,7 +1022,16 @@ function dind::run {
   dind::step "Starting DIND container:" "${container_name}"
 
   if [[ ! ${using_linuxkit} ]]; then
-    opts+=(-v /boot:/boot -v /lib/modules:/lib/modules)
+    if [ "${DARWIN_MODE}" == "True" ] ; then
+      # /boot and /lib/modules do not exist with Docker for Mac,
+      # /tmp is available for bind mounting.
+      BOOTVOL=/tmp
+      LIBMODULESVOL=/tmp
+    else
+      BOOTVOL=/boot
+      LIBMODULESVOL=/lib/modules
+    fi
+    opts+=(-v ${BOOTVOL}:/boot -v ${LIBMODULESVOL}:/lib/modules)
   fi
 
   if [[ ${ENABLE_CEPH} ]]; then
