@@ -292,7 +292,7 @@ fi
 #
 # For legacy support, the user can specify DIND_LABEL, which will be used in the
 # resource names. If a cluster ID is specified (a hybrid case, where people are
-# using the new method, but want custom names), the resourse name will have the
+# using the new method, but want custom names), the resource name will have the
 # suffix "-#" with the cluster ID. If no cluster ID is specified (for backward
 # compatibility), then the resource name will be just the DIND_LABEL, and a pseudo-
 # random number from 1..13 will be generated for the cluster ID to be used in
@@ -1907,7 +1907,7 @@ function dind::down {
 }
 
 function dind::apiserver-port {
-  # APISERVER_PORT is explicitely set
+  # APISERVER_PORT is explicitly set
   if [ -n "${APISERVER_PORT:-}" ]
   then
     echo "$APISERVER_PORT"

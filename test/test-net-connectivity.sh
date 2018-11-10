@@ -37,7 +37,7 @@ function setup-test() {
   # instead of a potential locally available one.
   export PATH="${KUBECTL_DIR}:${PATH}"
 
-  # We set it here explicitely, even though dind-cluster.sh would default it, to
+  # We set it here explicitly, even though dind-cluster.sh would default it, to
   # later in the test be able to check if a resolved IP is prefixed with the
   # specified $DNS64_PREFIX
   export DNS64_PREFIX='fd00:10:64:ff9b::'
