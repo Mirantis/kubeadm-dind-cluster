@@ -55,7 +55,8 @@ ENV CONTAINERD_SHA256=9818e3af4f9aac8d55fc3f66114346db1d1acd48d45f88b2cefd3d3baf
 ENV container docker
 
 ARG DEBIAN_FRONTEND=noninteractive
-RUN clean-install apt-utils \
+RUN clean-install apt \
+    apt-utils \
     apt-transport-https \
     bash \
     bridge-utils \
