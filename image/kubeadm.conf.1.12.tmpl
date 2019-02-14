@@ -1,0 +1,64 @@
+# Customize this, as needed, for your situation, but keep
+# the variables defined herein:
+#   ADV_ADDR, POD_SUBNET_DISABLE, POD_NETWORK_CIDR, KUBE_MASTER_NAME
+#   SVC_SUBNET, BIND_ADDR, BIND_PORT, KUBEADM_VERSION
+apiEndpoint:
+  advertiseAddress: "{{ADV_ADDR}}"
+  bindPort: 6443
+apiVersion: kubeadm.k8s.io/v1alpha3
+kind: InitConfiguration
+nodeRegistration:
+  criSocket: "{{CRI_SOCKET}}"
+  name: {{KUBE_MASTER_NAME}}
+  taints:
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/master
+---
+# The extra indent is important here because of templating issues.
+# 1.13 has extra nesting level here.
+apiServerExtraArgs:
+    insecure-bind-address: "{{BIND_ADDR}}"
+    insecure-port: "{{BIND_PORT}}"
+    {{COMPONENT_FEATURE_GATES}}
+{{APISERVER_EXTRA_ARGS}}
+apiVersion: kubeadm.k8s.io/v1alpha3
+auditPolicy:
+  logDir: /var/log/kubernetes/audit
+  logMaxAge: 2
+  path: ""
+certificatesDir: /etc/kubernetes/pki
+controlPlaneEndpoint: ""
+# The extra indent is important here because of templating issues.
+# 1.13 has extra nesting level here.
+controllerManagerExtraArgs:
+    {{COMPONENT_FEATURE_GATES}}
+{{CONTROLLER_MANAGER_EXTRA_ARGS}}
+etcd:
+  local:
+    dataDir: /var/lib/etcd
+    image: ""
+featureGates: {{FEATURE_GATES}}
+imageRepository: k8s.gcr.io
+kind: ClusterConfiguration
+kubernetesVersion: "{{KUBEADM_VERSION}}"
+networking:
+  {{POD_SUBNET_DISABLE}}podSubnet: "{{POD_NETWORK_CIDR}}"
+  serviceSubnet: "{{SVC_SUBNET}}"
+# The extra indent is important here because of templating issues.
+# 1.13 has extra nesting level here.
+schedulerExtraArgs:
+    {{COMPONENT_FEATURE_GATES}}
+{{SCHEDULER_EXTRA_ARGS}}
+unifiedControlPlaneImage: mirantis/hypokube:final
+apiServerExtraVolumes:
+- name: hyperkube
+  hostPath: /k8s/hyperkube
+  mountPath: /hyperkube
+controllerManagerExtraVolumes:
+- name: hyperkube
+  hostPath: /k8s/hyperkube
+  mountPath: /hyperkube
+schedulerExtraVolumes:
+- name: hyperkube
+  hostPath: /k8s/hyperkube
+  mountPath: /hyperkube

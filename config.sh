@@ -18,8 +18,16 @@ NUM_NODES=${NUM_NODES:-2}
 # Use non-dockerized build
 # KUBEADM_DIND_LOCAL=
 
-# Use prebuilt DIND image
-DIND_IMAGE="${DIND_IMAGE:-mirantis/kubeadm-dind-cluster:v1.10}"
+# Image name base for k-d-c
+DIND_IMAGE_BASE="${DIND_IMAGE_BASE:-mirantis/kubeadm-dind-cluster}"
+
+# Specify DIND image to use. mirantis/kubeadm-dind-cluster:local
+# is the one that is built locally using build/build-local.sh
+DIND_IMAGE="${DIND_IMAGE:-${DIND_IMAGE_BASE}:local}"
+
+# Set DOWNLOAD_KUBECTL to non-empty string to download
+# kubectl. Should not be used with BUILD_KUBEADM / BUILD_HYPERKUBE
+# DOWNLOAD_KUBECTL=y
 
 # Set to non-empty string to enable building kubeadm
 # BUILD_KUBEADM=y
@@ -27,10 +35,12 @@ DIND_IMAGE="${DIND_IMAGE:-mirantis/kubeadm-dind-cluster:v1.10}"
 # Set to non-empty string to enable building hyperkube
 # BUILD_HYPERKUBE=y
 
-# download kubectl on the host
-# Set automatically based on DIND image version tag
-# if image version tag is of the form vNNN.NNN
-# LOCAL_KUBECTL_VERSION="${LOCAL_KUBECTL_VERSION:-v1.10}"
+# Use pre-built Kubernetes binaries (hyperkube and kubeadm) on the
+# host, located in the specified directory. When this environment
+# variable is set, BUILD_KUBEADM and BUILD_HYPERKUBE will be ignored.
+# This will not work with a remote docker engine (e.g. started via
+# docker-machine on GCE) unless the file is placed on the target machine.
+DIND_K8S_BIN_DIR="${DIND_K8S_BIN_DIR:-}"
 
 # Set custom URL for Dashboard yaml file
 # DASHBOARD_URL="${DASHBOARD_URL:-https://rawgit.com/kubernetes/dashboard/bfab10151f012d1acc5dfb1979f3172e2400aa3c/src/deploy/kubernetes-dashboard.yaml}"
@@ -59,8 +69,8 @@ CNI_PLUGIN="${CNI_PLUGIN:-bridge}"
 # MASTER_EXTRA_OPTS="  "
 
 # Define which DNS service to run
-# possible values are kube-dns (default) and coredns
-DNS_SERVICE="${DNS_SERVICE:-kube-dns}"
+# possible values are coredns (default) and kube-dns
+DNS_SERVICE="${DNS_SERVICE:-coredns}"
 
 # Feature Gates
 # This value will be passed to kube-apiserver, kube-controller-manager and kube-scheduler
@@ -83,3 +93,9 @@ DNS_SERVICE="${DNS_SERVICE:-kube-dns}"
 # Extra component args for kube-scheduler
 # SCHEDULER_underscored_option_name will be converted --hyphenated-option-name
 # SCHEDULER_xxx=yyy
+
+# Enable Ceph support. DANGER: you must take care of unmapping all
+# the RBDs (e.g. by removing all the pods that use RBDs) before
+# stopping / restarting the cluster, or they'll get stuck possibly
+# blocking even system reboot.
+# ENABLE_CEPH=y

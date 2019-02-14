@@ -1,5 +1,4 @@
-#!/bin/bash
-# Copyright 2018 Mirantis
+# Copyright 2018
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,13 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -o errexit
-set -o nounset
-set -o pipefail
-set -o errtrace
+# Usage:
+# To build and push an image to DockerHub, run:
+#      make IMG=<image-name-colon-version>
+# To just do a local build without a push to DockerHub:
+#      make image IMG=<image-name-colon-version>
 
-DIND_ROOT=$(dirname "${BASH_SOURCE}")/..
-source "$DIND_ROOT/build/funcs.sh"
+IMG = "diverdane/bind9:latest"
 
-dind::build-base
-dind::build-image "${image_name}:local"
+all: image
+
+image:
+	docker build --no-cache -t "$(IMG)" .
+
+push: image
+	gcloud docker -- push "$(IMG)"
+
+.PHONY: all image push
